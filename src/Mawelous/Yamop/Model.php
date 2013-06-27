@@ -162,11 +162,17 @@ class Model
 		
 		unset( $this->id );
 		
-		//deleteng ids in embedded objects
+		//deleteng string ids in embedded objects
+		foreach ( static::$_embeddedObject as $fieldName => $embeddedObject ){
+			if( isset( $this->$fieldName ) && !empty ( $this->$fieldName ) ){
+				unset ( $embeddedObject->id );
+			}
+		}		
+		
 		foreach ( static::$_embeddedObjectList as $fieldName => $class ){
 			if( isset( $this->$fieldName ) && !empty ( $this->$fieldName ) ){
-				foreach( $this->$fieldName as $_embeddedObject ){
-					unset ( $_embeddedObject->id );
+				foreach( $this->$fieldName as $embeddedObject ){
+					unset ( $embeddedObject->id );
 				}
 			}
 		}
@@ -294,7 +300,7 @@ class Model
 	{
 		if( isset($this->$variable) && !empty( $this->$variable ) ){
 			if( empty( $toVariable ) ){
-				$toField = $variable;
+				$toVariable = $variable;
 			}
 			$this->$toVariable = $class::getMapper()->findOne( array ('_id' => $this->$variable ), $fields );
 		}
