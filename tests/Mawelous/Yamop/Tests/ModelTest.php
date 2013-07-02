@@ -3,6 +3,15 @@ namespace Mawelous\Yamop\Tests;
 
 class ModelTest extends BaseTest
 {
+
+	protected $_articleId;
+	protected $_authorId;
+
+	public function setUp()
+	{
+		$this->_articleId = new \MongoId();
+		$this->_authorId = new \MongoId();		
+	}
 	
 	public function testFill()
 	{
@@ -18,6 +27,8 @@ class ModelTest extends BaseTest
 		$this->assertInstanceOf( '\Model\Comment', $comment );
 		$this->assertSame( $commentData[ 'text' ], $comment->text );
 		$this->assertSame( $commentData[ 'date' ]->sec, $comment->date->sec );
+		
+		return $article;
 	}
 	
 	public function testGetMapper()
@@ -42,9 +53,8 @@ class ModelTest extends BaseTest
 	/**
 	 * @depends testFill
 	 */	
-	public function testSave()
+	public function testSave( \Model\Article $article )
 	{
-		$article = $this->_getArticle();
 		$result = $article->save();
 		
 		$this->assertArrayHasKey( 'ok', $result );
@@ -52,13 +62,12 @@ class ModelTest extends BaseTest
 		$this->assertObjectHasAttribute( 'id', $article );
 		$this->assertObjectHasAttribute( '_id', $article );
 		
-		$rawArticle = $this->_dbConnection->articles
+		$rawArticle = self::$_dbConnection->articles
 			->findOne( array( '_id' => $article->_id ) );
 		
 		$this->assertInternalType( 'array', $rawArticle );
 
 		return $article;
-		//$this->_dbConnection->articles->remove( array( '_id' => $this->_articleId  ) );
 		
 	}
 	
@@ -68,24 +77,23 @@ class ModelTest extends BaseTest
 	public function testSaveWithoutStringIds( \Model\Article $article )
 	{
 
-		$rawArticle = $this->_dbConnection->articles
+		$rawArticle = self::$_dbConnection->articles
 			->findOne( array( '_id' => $article->_id  ) );
 		
 		$this->assertFalse( isset( $rawArticle['id'] ));
 		$this->assertFalse( isset( $rawArticle['author']['id'] ));
 		$this->assertFalse( isset( $rawArticle['comments'][0]['id'] ));
 		
-		$this->_dbConnection->articles->remove( array( '_id' => $this->_articleId  ) );
 	}
 	
 	public function testRemove()
 	{
 		$article = $this->_getArticle();
-		$this->_dbConnection->articles->insert( $article );
+		self::$_dbConnection->articles->insert( $article );
 		
 		$article->remove();
 		
-		$result = $this->_dbConnection->articles->findOne( array( '_id' => $article->_id  ) );
+		$result = self::$_dbConnection->articles->findOne( array( '_id' => $article->_id  ) );
 
 		$this->assertSame( null, $result );
 	}
@@ -93,7 +101,7 @@ class ModelTest extends BaseTest
 	public function testFindById()
 	{
 		$article = $this->_getArticle();
-		$this->_dbConnection->articles->insert( $article );
+		self::$_dbConnection->articles->insert( $article );
 
 		$dbArticleByString = \Model\Article::findById( $article->id );
 		$dbArticleByMongoId = \Model\Article::findById( $article->_id );
@@ -101,7 +109,6 @@ class ModelTest extends BaseTest
 		$this->assertInstanceOf( '\Model\Article', $dbArticleByString );
 		$this->assertInstanceOf( '\Model\Article', $dbArticleByMongoId );
 		
-		$this->_dbConnection->articles->remove( array( '_id' => $this->_articleId  ) );
 	}
 	
 	public function testJoinOne()
@@ -111,7 +118,7 @@ class ModelTest extends BaseTest
 		$thirdArticle = clone $article;
 
 		$author = $this->_getAuthor();
-		$this->_dbConnection->authors->insert( $author );	
+		self::$_dbConnection->authors->insert( $author );	
 
 		$article->joinOne( 'author_id', '\Model\Author', 'author' );
 		$this->assertInstanceOf( '\Model\Author', $article->author );
@@ -123,7 +130,6 @@ class ModelTest extends BaseTest
 		$this->assertInstanceOf( '\Model\Author', $thirdArticle->author );
 		$this->assertFalse( isset( $thirdArticle->author->email ) );
 
-		$this->_dbConnection->authors->remove( array( '_id' => $this->_authorId  ) );
 	}
 	
 	protected function _getArticle()
