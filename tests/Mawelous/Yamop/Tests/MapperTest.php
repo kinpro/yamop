@@ -141,6 +141,25 @@ class MapperTest extends BaseTest
 	
 	}	
 	
+	public function testFindById()
+	{
+		$mongoId = new \MongoId();
+		$stringId = (string)$mongoId;
+		$data = $this->_getSimpleData();
+		$data[ '_id' ] = $mongoId;
+		self::$_dbConnection->simple->insert( $data );
+		
+		$byString = ( new Mapper( '\Model\Simple') )->findById( $stringId );
+		
+		$this->assertInstanceOf( '\Model\Simple', $byString );
+		
+		$byMongoId = ( new Mapper( '\Model\Simple') )->findById( $mongoId );
+		
+		$this->assertInstanceOf( '\Model\Simple', $byMongoId );
+	}
+	
+	
+	
 	protected function _getSimpleData()
 	{
 		return array( 'test' => 'test' );
