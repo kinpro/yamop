@@ -111,6 +111,30 @@ class ModelTest extends BaseTest
 		
 	}
 	
+	public function testFindOne()
+	{
+		$article = $this->_getArticle();
+		self::$_dbConnection->articles->insert( $article );
+		$result = \Model\Article::findOne( array ('title' => $article->title ) );
+		
+		$this->assertInstanceOf( '\Model\Article', $result);
+		$this->assertEquals( $article->id, $result->id );
+	}
+	
+	public function testFind()
+	{
+		$article = $this->_getArticle();
+		self::$_dbConnection->articles->insert( $article );
+		$result = \Model\Article::find( array ('title' => $article->title ) );
+		
+		$this->assertInstanceOf( '\Mawelous\Yamop\Mapper', $result);
+		
+		$cursor = $result->getCursor();
+		
+		$this->assertEquals( 1, count( $cursor) );
+		
+	}
+	
 	public function testJoinOne()
 	{
 		$article = $this->_getArticle();

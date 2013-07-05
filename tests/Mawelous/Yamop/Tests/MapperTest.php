@@ -158,17 +158,175 @@ class MapperTest extends BaseTest
 		$this->assertInstanceOf( '\Model\Simple', $byMongoId );
 	}
 	
+	public function testFindAndGetWithoutFetchSet()
+	{
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple' );
+		$result = $mapper->find()->get();
+		
+		$this->assertInternalType( 'array', $result );
+		
+		$keys = array_keys( $result );
+		
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
+		$this->assertEquals( count( $data ), count( $result ) );
+	}
 	
+	public function testFindAndGetWithFetchObjectSet()
+	{
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple', Mapper::FETCH_OBJECT );
+		$result = $mapper->find()->get();
+	
+		$this->assertInternalType( 'array', $result );
+	
+		$keys = array_keys( $result );
+	
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
+		$this->assertEquals( count( $data ), count( $result ) );
+		
+		$mapper = new Mapper( '\Model\Simple' );
+		$mapper->setFetchType( Mapper::FETCH_OBJECT );
+		$result = $mapper->find()->get();
+		
+		$this->assertInternalType( 'array', $result );
+		
+		$keys = array_keys( $result );
+		
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
+		$this->assertEquals( count( $data ), count( $result ) );		
+	}	
+	
+	public function testFindAndGetWithFetchArraySet()
+	{
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple', Mapper::FETCH_ARRAY );
+		$result = $mapper->find()->get();
+	
+		$this->assertInternalType( 'array', $result );
+	
+		$keys = array_keys( $result );
+	
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$current = current( $result );
+		$this->assertInternalType( 'array', $current );
+		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id'] );
+		$this->assertEquals( count( $data ), count( $result ) );
+	
+		$mapper = new Mapper( '\Model\Simple' );
+		$mapper->setFetchType( Mapper::FETCH_ARRAY );
+		$result = $mapper->find()->get();
+	
+		$this->assertInternalType( 'array', $result );
+	
+		$keys = array_keys( $result );
+	
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$current = current( $result );
+		$this->assertInternalType( 'array', $current );
+		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id'] );
+		$this->assertEquals( count( $data ), count( $result ) );
+		
+	}
+		
+	public function testFindAndGetWithFetchJsonSet()
+	{
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple', Mapper::FETCH_JSON );
+		$result = $mapper->find()->get();
+	
+		$this->assertInternalType( 'string', $result );
+		
+		$result = json_decode( $result, true );
+		
+		$keys = array_keys( $result );
+	
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$current = current( $result );
+		
+		$this->assertInternalType( 'array', $current );
+		$this->assertEquals( (string)$data[0]['_id'], $current['_id']['$id'] );
+		$this->assertEquals( count( $data ), count( $result ) );
+	
+		$mapper = new Mapper( '\Model\Simple' );
+		$mapper->setFetchType( Mapper::FETCH_JSON );
+		$result = $mapper->find()->get();
+	
+		$this->assertInternalType( 'string', $result );
+		
+		$result = json_decode( $result, true );
+	
+		$keys = array_keys( $result );
+	
+		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
+		$current = current( $result );
+		$this->assertInternalType( 'array', $current );
+		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id']['$id'] );
+		$this->assertEquals( count( $data ), count( $result ) );
+	
+	}	
+	
+	/**
+	 * @expectedException Exception
+	 */
+	public function testSortWithoutFind()
+	{
+		( new Mapper( 'Model\Simple' ) )->sort();
+	}
+	
+	/**
+	 * @expectedException Exception
+	 */
+	public function testLimitWithoutFind()
+	{
+		( new Mapper( 'Model\Simple' ) )->limit();
+	}
+
+	/**
+	 * @expectedException Exception
+	 */
+	public function testSkipWithoutFind()
+	{
+		( new Mapper( 'Model\Simple' ) )->skip();
+	}	
+	
+	public function testSort()
+	{
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple' );
+		$sortedAsc = $mapper->find()->sort( array( 'letter' => 1 ) );
+		
+		
+		
+	}
 	
 	protected function _getSimpleData()
 	{
 		return array( 'test' => 'test' );
 	}
 	
+	protected function _getListData()
+	{
+		return array(
+				array( 'letter' => 'b', '_id' => new \MongoId( '51d57f68b7846c9816000003' ) ),
+				array( 'letter' => 'c'),
+				array( 'letter' => 'a')
+				);
+	}
+	
 	protected function _saveSimpleData()
 	{
 		self::$_dbConnection->simple->insert( $this->_getSimpleData() );
 		return $this->_getSimpleData();
+	}
+	
+	protected function _saveListData()
+	{
+		self::$_dbConnection->simple->batchInsert( $this->_getListData() );
+		return $this->_getListData();		
 	}
 	
 }

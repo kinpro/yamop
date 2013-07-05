@@ -205,6 +205,32 @@ class Model
 	}
 	
 	/**
+	 * Gets object by query.
+	 * Refferer to Mapper's findOne
+	 *
+	 * @param array $query Query as for findOne in mongodb driver
+	 * @param array $fields
+	 * @return Model
+	 */
+	public static function findOne( $query, $fields = array() )
+	{
+		return static::getMapper()->findOne( $query, $fields );
+	}	
+	
+	/**
+	 * Refferer to Mapper's find.
+	 * Gets Mapper object with cursor set.
+	 *
+	 * @param array $query Query as for findOne in mongodb driver
+	 * @param array $fields
+	 * @return Model
+	 */
+	public static function find( $query, $fields = array() )
+	{
+		return static::getMapper()->find( $query, $fields );
+	}	
+	
+	/**
 	 * Checks if _id is set in object
 	 * @return boolean
 	 */

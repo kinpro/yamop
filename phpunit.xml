@@ -10,6 +10,9 @@
         <testsuite name="Yamop">
             <directory>./tests/</directory>
         </testsuite>  
+        <testsuite name="Model">
+            <file>./tests/Mawelous/Yamop/Tests/ModelTest.php</file>
+        </testsuite>        
         <testsuite name="Mapper">
             <file>./tests/Mawelous/Yamop/Tests/MapperTest.php</file>
         </testsuite>               
