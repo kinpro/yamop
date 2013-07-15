@@ -2,21 +2,19 @@
 
 namespace Model;
 
-class Simple
+use Mawelous\Yamop\Model;
+
+class Simple extends Model
 {
-	public $data;
+	
+	protected static $_collectionName = 'simple';
 	
 	public static $isCollectionNameCalled = false;
-	
-	public function __construct( $array )
-	{
-		$this->data = $array;
-	}
 	
 	public static function getCollectionName()
 	{
 		self::$isCollectionNameCalled = true;
-		return 'simple';
+		return parent::getCollectionName();
 	}
 	
 }

@@ -21,7 +21,7 @@ class MapperTest extends BaseTest
 		$result = $mapper->fetchObject( $data );
 		
 		$this->assertInstanceOf( '\Model\Simple', $result );
-		$this->assertSame( $data, $result->data );
+		$this->assertSame( $data, get_object_vars( $result ) );
 		
 	}
 	
@@ -39,24 +39,28 @@ class MapperTest extends BaseTest
 	
 	public function testFindSetsCursor()
 	{
-		$data = $this->_saveSimpleData();
 	
 		$mapper = new Mapper( '\Model\Simple' );
 	
 		$emptyCursor = $mapper->getCursor();
 		
-		$result = $mapper->find( $data );
-		$firstCursor = $mapper->getCursor();
+		$this->assertSame( null, $emptyCursor );
 		
 		$mapper->find( array( 'not_existing' => 'nothing' ) );
-		$secondCursor = $mapper->getCursor();
+		$cursor = $mapper->getCursor();
 
-		$this->assertTrue( \Model\Simple::$isCollectionNameCalled );
-		$this->assertSame( null, $emptyCursor );
-		$this->assertInstanceOf( '\MongoCursor', $firstCursor );
-		$this->assertEquals( 1, $firstCursor->count() );
-		$this->assertInstanceOf( '\MongoCursor', $secondCursor );
-		$this->assertEquals( 0, $secondCursor->count() );
+		$this->assertTrue( \Model\Simple::$isCollectionNameCalled );		
+		$this->assertInstanceOf( '\MongoCursor', $cursor );
+		$this->assertEquals( 0, $cursor->count() );
+		
+		$data = $this->_saveSimpleData();		
+		
+		$result = $mapper->find( $data );
+		$cursor = $mapper->getCursor();
+
+		$this->assertInstanceOf( '\MongoCursor', $cursor );
+		$this->assertEquals( 1, $cursor->count() );
+
 	
 	}	
 	
@@ -69,9 +73,9 @@ class MapperTest extends BaseTest
 		$object = $mapper->findOne( $data );
 		
 		$this->assertInstanceOf( '\Model\Simple', $object );
-		$this->assertTrue( isset( $object->data['_id'] ) );
-		$this->assertInstanceOf( '\MongoId', $object->data['_id'] );
-		$this->assertTrue( isset( $object->data['test'] ) );		
+		$this->assertAttributeNotEmpty( '_id', $object );
+		$this->assertAttributeInstanceOf( '\MongoId', '_id', $object );
+		$this->assertAttributeNotEmpty( 'test', $object );		
 	}
 	
 	public function testFindOneAsObjectAfterSettings()
@@ -99,18 +103,18 @@ class MapperTest extends BaseTest
 		$result = $mapperOne->findOne( $data );
 	
 		$this->assertInternalType( 'array', $result );
-		$this->assertTrue( isset( $result['_id'] ) );
+		$this->assertArrayHasKey( '_id', $result );
 		$this->assertInstanceOf( '\MongoId', $result['_id'] );
-		$this->assertTrue( isset( $result['test'] ) );
+		$this->assertArrayHasKey( 'test', $result );
 	
 		$mapperTwo = new Mapper( '\Model\Simple' );
 		$mapperTwo->setFetchType( Mapper::FETCH_ARRAY );
 		$result = $mapperTwo->findOne( $data );
 	
 		$this->assertInternalType( 'array', $result );
-		$this->assertTrue( isset( $result['_id'] ) );
+		$this->assertArrayHasKey( '_id', $result );
 		$this->assertInstanceOf( '\MongoId', $result['_id'] );
-		$this->assertTrue( isset( $result['test'] ) );	
+		$this->assertArrayHasKey( 'test', $result );	
 	
 	}	
 	
@@ -124,9 +128,9 @@ class MapperTest extends BaseTest
 		$this->assertInternalType( 'string', $result );
 		$decoded = json_decode( $result );
 		$this->assertInstanceOf( 'stdClass', $decoded );
-		$this->assertTrue( isset( $decoded->_id ) );
-		$this->assertInstanceOf( 'stdClass', $decoded->_id );
-		$this->assertTrue( isset( $decoded->test ) );
+		$this->assertAttributeNotEmpty( '_id', $decoded );
+		$this->assertAttributeInstanceOf( 'stdClass', '_id', $decoded );
+		$this->assertAttributeNotEmpty( 'test', $decoded );
 	
 		$mapperTwo = new Mapper( '\Model\Simple' );
 		$mapperTwo->setFetchType( Mapper::FETCH_JSON );
@@ -135,9 +139,9 @@ class MapperTest extends BaseTest
 		$this->assertInternalType( 'string', $result );
 		$decoded = json_decode( $result );
 		$this->assertInstanceOf( 'stdClass', $decoded );
-		$this->assertTrue( isset( $decoded->_id ) );
-		$this->assertInstanceOf( 'stdClass', $decoded->_id );
-		$this->assertTrue( isset( $decoded->test ) );		
+		$this->assertAttributeNotEmpty( '_id', $decoded );
+		$this->assertAttributeInstanceOf( 'stdClass', '_id', $decoded );
+		$this->assertAttributeNotEmpty( 'test', $decoded );		
 	
 	}	
 	
@@ -170,7 +174,7 @@ class MapperTest extends BaseTest
 		
 		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
 		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 	}
 	
 	public function testFindAndGetWithFetchObjectSet()
@@ -185,7 +189,7 @@ class MapperTest extends BaseTest
 	
 		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
 		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 		
 		$mapper = new Mapper( '\Model\Simple' );
 		$mapper->setFetchType( Mapper::FETCH_OBJECT );
@@ -197,7 +201,7 @@ class MapperTest extends BaseTest
 		
 		$this->assertEquals( (string)$data[0]['_id'], $keys[0] );
 		$this->assertInstanceOf( '\Model\Simple', current( $result ) );
-		$this->assertEquals( count( $data ), count( $result ) );		
+		$this->assertCount( count( $data ), $result );		
 	}	
 	
 	public function testFindAndGetWithFetchArraySet()
@@ -214,7 +218,7 @@ class MapperTest extends BaseTest
 		$current = current( $result );
 		$this->assertInternalType( 'array', $current );
 		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id'] );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 	
 		$mapper = new Mapper( '\Model\Simple' );
 		$mapper->setFetchType( Mapper::FETCH_ARRAY );
@@ -228,7 +232,7 @@ class MapperTest extends BaseTest
 		$current = current( $result );
 		$this->assertInternalType( 'array', $current );
 		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id'] );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 		
 	}
 		
@@ -249,7 +253,7 @@ class MapperTest extends BaseTest
 		
 		$this->assertInternalType( 'array', $current );
 		$this->assertEquals( (string)$data[0]['_id'], $current['_id']['$id'] );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 	
 		$mapper = new Mapper( '\Model\Simple' );
 		$mapper->setFetchType( Mapper::FETCH_JSON );
@@ -265,7 +269,7 @@ class MapperTest extends BaseTest
 		$current = current( $result );
 		$this->assertInternalType( 'array', $current );
 		$this->assertEquals( (string)$data[0]['_id'], (string) $current['_id']['$id'] );
-		$this->assertEquals( count( $data ), count( $result ) );
+		$this->assertCount( count( $data ), $result );
 	
 	}	
 	
@@ -297,9 +301,13 @@ class MapperTest extends BaseTest
 	{
 		$data = $this->_saveListData();
 		$mapper = new Mapper( '\Model\Simple' );
-		$sortedAsc = $mapper->find()->sort( array( 'letter' => 1 ) );
+		$sortedAsc = $mapper->find()->sort( array( 'letter' => 1 ) )->get();
 		
+		$first = array_shift( $sortedAsc );
+		$last = array_pop( $sortedAsc );
 		
+		$this->assertAttributeEquals( 'a', 'letter', $first );
+		$this->assertAttributeEquals( 'c', 'letter', $last );
 		
 	}
 	
