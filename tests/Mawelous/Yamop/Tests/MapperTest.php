@@ -311,6 +311,28 @@ class MapperTest extends BaseTest
 		
 	}
 	
+	public function testLimit()
+	{
+		$limit = 2;
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple' );
+		$limited = $mapper->find()->limit( $limit )->get();
+	
+		$this->assertCount( $limit, $limited );
+	
+	}
+
+	public function testSkip()
+	{
+		$skip = 2;
+		$data = $this->_saveListData();
+		$mapper = new Mapper( '\Model\Simple' );
+		$limited = $mapper->find()->skip( $skip )->get();
+	
+		$this->assertCount( count( $data ) - $skip, $limited );
+	
+	}	
+	
 	protected function _getSimpleData()
 	{
 		return array( 'test' => 'test' );
