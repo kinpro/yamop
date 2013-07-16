@@ -333,6 +333,20 @@ class MapperTest extends BaseTest
 	
 	}	
 	
+	public function testJoinWithVariable()
+	{
+		$author = array( 'name' => 'test' );
+		self::$_dbConnection->authors->save( $author );
+		self::$_dbConnection->articles->insert( array ( 'title' => 'test', 'author' => $author['_id'] ) );
+		
+		$articles = \Model\Article::getMapper()->find()->join( 'author', '\Model\Author', 'authorObject' )->get();
+		$article = array_shift( $articles );
+		
+		$this->assertAttributeNotEmpty( 'authorObject', $article );
+		$this->assertAttributeInstanceOf( '\Model\Author', 'authorObject', $article );
+		
+	}
+	
 	protected function _getSimpleData()
 	{
 		return array( 'test' => 'test' );
