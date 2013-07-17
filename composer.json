@@ -14,9 +14,6 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=5.3.0"
-    },   
-    "require-dev": {
-        "mockery/mockery": "dev-master@dev"
     },    
     "autoload": {
         "psr-0": { "Mawelous\\Yamop": "src/" }

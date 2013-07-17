@@ -1,16 +1,22 @@
 <?php
 namespace Mawelous\Yamop\Tests;
 
+use \Mawelous\Yamop\Model;
+
 class ModelTest extends BaseTest
 {
 
 	protected $_articleId;
 	protected $_authorId;
+	protected $_reviewIds;
+	protected $_timestamp;
 
 	public function setUp()
 	{
 		$this->_articleId = new \MongoId();
-		$this->_authorId = new \MongoId();		
+		$this->_authorId = new \MongoId();
+		$this->_reviewIds = array( new \MongoId(), new \MongoId() );
+		$this->_timestamp = strtotime( '13-12-2012' );		
 	}
 	
 	public function testFill()
@@ -88,9 +94,7 @@ class ModelTest extends BaseTest
 	
 	public function testRemove()
 	{
-		$article = $this->_getArticle();
-		self::$_dbConnection->articles->insert( $article );
-		
+		$article = $this->_insertArticle();		
 		$article->remove();
 		
 		$result = self::$_dbConnection->articles->findOne( array( '_id' => $article->_id  ) );
@@ -100,8 +104,7 @@ class ModelTest extends BaseTest
 	
 	public function testFindById()
 	{
-		$article = $this->_getArticle();
-		self::$_dbConnection->articles->insert( $article );
+		$article = $this->_insertArticle();
 
 		$dbArticleByString = \Model\Article::findById( $article->id );
 		$dbArticleByMongoId = \Model\Article::findById( $article->_id );
@@ -113,8 +116,8 @@ class ModelTest extends BaseTest
 	
 	public function testFindOne()
 	{
-		$article = $this->_getArticle();
-		self::$_dbConnection->articles->insert( $article );
+		$article = $this->_insertArticle();
+		
 		$result = \Model\Article::findOne( array ('title' => $article->title ) );
 		
 		$this->assertInstanceOf( '\Model\Article', $result);
@@ -123,38 +126,112 @@ class ModelTest extends BaseTest
 	
 	public function testFind()
 	{
-		$article = $this->_getArticle();
-		self::$_dbConnection->articles->insert( $article );
+		$article = $this->_insertArticle();
+		
 		$result = \Model\Article::find( array ('title' => $article->title ) );
 		
 		$this->assertInstanceOf( '\Mawelous\Yamop\Mapper', $result);
 		
 		$cursor = $result->getCursor();
 		
-		$this->assertEquals( 1, count( $cursor) );
+		$this->assertEquals( 1, count( $cursor ) );
 		
 	}
 	
-	public function testJoinOne()
+	public function testJoinOneWithFieldName()
 	{
 		$article = $this->_getArticle();
-		$secondArticle = clone $article;
-		$thirdArticle = clone $article;
-
-		$author = $this->_getAuthor();
-		self::$_dbConnection->authors->insert( $author );	
-
-		$article->joinOne( 'author_id', '\Model\Author', 'author' );
-		$this->assertInstanceOf( '\Model\Author', $article->author );
+		$author = $this->_insertAuthor();
 		
-		$secondArticle->joinOne( 'author_id', '\Model\Author' );
-		$this->assertInstanceOf( '\Model\Author', $secondArticle->author_id );
-
-		$thirdArticle->joinOne( 'author_id', '\Model\Author', 'author', array( 'name' ) );
-		$this->assertInstanceOf( '\Model\Author', $thirdArticle->author );
-		$this->assertFalse( isset( $thirdArticle->author->email ) );
-
+		$article->joinOne( 'author_id', '\Model\Author', 'author' );
+		$this->assertAttributeInstanceOf( '\Model\Author', 'author', $article );		
+		
 	}
+	
+	public function testJoinOneWithoutFieldName()
+	{
+		$article = $this->_getArticle();
+		$author = $this->_insertAuthor();
+	
+		$article->joinOne( 'author_id', '\Model\Author' );
+		$this->assertAttributeInstanceOf( '\Model\Author', 'author_id', $article );
+		
+	}
+
+	public function testJoinOneWithLimitedFields()
+	{
+		$article = $this->_getArticle();
+		$author = $this->_insertAuthor();
+		
+		$article->joinOne( 'author_id', '\Model\Author', 'author', array( 'name' ) );
+	
+		$article->joinOne( 'author_id', '\Model\Author' );
+		$this->assertAttributeInstanceOf( '\Model\Author', 'author', $article );
+		$this->assertFalse( isset( $article->author->email ) );
+	
+	}	
+	
+	public function testJoinManyWithFieldName()
+	{
+		$article = $this->_getArticle();
+		$article->review_ids = $this->_reviewIds;
+		$this->_insertReviews();
+		
+		$article->joinMany( 'review_ids', '\Model\Review', 'reviews' );
+		
+		$this->assertInternalType( 'array', $article->reviews );	
+
+		$review = array_shift( $article->reviews );
+		$this->assertInstanceOf( '\Model\Review', $review );		
+		
+	}
+	
+	public function testJoinManyWithoutFieldName()
+	{
+		$article = $this->_getArticle();
+		$article->reviews = $this->_reviewIds;
+		$this->_insertReviews();
+	
+		$article->joinMany( 'reviews', '\Model\Review' );
+	
+		$this->assertInternalType( 'array', $article->reviews );
+	
+		$review = array_shift( $article->reviews );
+		$this->assertInstanceOf( '\Model\Review', $review );
+	
+	}	
+	
+	public function testJoinManyWithLimitedFields()
+	{
+		$article = $this->_getArticle();
+		$article->reviews = $this->_reviewIds;
+		$this->_insertReviews();
+	
+		$article->joinMany( 'reviews', '\Model\Review', 'reviews', array( 'title' ) );
+	
+		$this->assertInternalType( 'array', $article->reviews );
+	
+		$review = array_shift( $article->reviews );
+		$this->assertInstanceOf( '\Model\Review', $review );
+		$this->assertFalse( isset( $review->text ) );
+	
+	}	
+	
+	public function testDateFormat()
+	{
+		$article = $this->_insertArticle();
+		
+		$this->assertSame( date( Model::$dateFormat, $this->_timestamp ), $article->getDate( 'date' ) );
+		$this->assertSame( date( 'Y', $this->_timestamp ), $article->getDate( 'date', 'Y' ) );
+	}
+	
+	public function testTimeFormat()
+	{
+		$article = $this->_insertArticle();
+	
+		$this->assertSame( date( Model::$timeFormat, $this->_timestamp ), $article->getTime( 'date' ) );
+		$this->assertSame( date( 'Y-m-s H:i', $this->_timestamp ), $article->getDate( 'date', 'Y-m-s H:i' ) );
+	}	
 	
 	protected function _getArticle()
 	{
@@ -190,6 +267,39 @@ class ModelTest extends BaseTest
 			'title' => 'Lorem',
 			'text' => 'Sample text',
 			'note' => array( 'text' => 'Note text'),
-			'comments' => array ( $this->_getCommentData() ) );	
+			'comments' => array ( $this->_getCommentData() ),
+			'date' => new \MongoDate( $this->_timestamp )
+			);	
 	}
+	
+	protected function _insertArticle()
+	{
+		$article = $this->_getArticle();
+		self::$_dbConnection->articles->insert( $article );
+		return $article;		
+	}
+	
+	protected function _insertAuthor()
+	{
+		$author = $this->_getAuthor();
+		self::$_dbConnection->authors->insert( $author );
+		return $author;		
+	}
+	
+	protected function _insertReviews()
+	{
+		
+		$reviewsData = array(
+			array( '_id'   => $this->_reviewIds[0],
+				   'title' => 'review1',
+					'text' => 'text' ),
+			array( '_id'   => $this->_reviewIds[1],
+				   'title' => 'review2',
+				   'text'  => 'text' )			
+				);
+		
+		self::$_dbConnection->reviews->batchInsert( $reviewsData );
+		
+	}
+	
 }

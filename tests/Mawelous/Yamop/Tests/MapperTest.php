@@ -3,17 +3,10 @@ namespace Mawelous\Yamop\Tests;
 
 use Mawelous\Yamop\Model;
 use Mawelous\Yamop\Mapper;
-use \Mockery as m;
 
 class MapperTest extends BaseTest
 {
-	
-	public function tearDown()
-	{
-		m::close();
-		parent::tearDown();
-	}
-	
+		
 	public function testFetchObject()
 	{
 		$data = $this->_getSimpleData();
