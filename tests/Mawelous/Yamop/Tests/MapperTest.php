@@ -335,9 +335,7 @@ class MapperTest extends BaseTest
 	
 	public function testJoinWithVariable()
 	{
-		$author = array( 'name' => 'test' );
-		self::$_dbConnection->authors->save( $author );
-		self::$_dbConnection->articles->insert( array ( 'title' => 'test', 'author' => $author['_id'] ) );
+		$this->_saveArticleWithAuthor();
 		
 		$articles = \Model\Article::getMapper()->find()->join( 'author', '\Model\Author', 'authorObject' )->get();
 		$article = array_shift( $articles );
@@ -346,6 +344,18 @@ class MapperTest extends BaseTest
 		$this->assertAttributeInstanceOf( '\Model\Author', 'authorObject', $article );
 		
 	}
+	
+	public function testJoinWithoutVariable()
+	{
+		$this->_saveArticleWithAuthor();
+	
+		$articles = \Model\Article::getMapper()->find()->join( 'author', '\Model\Author' )->get();
+		$article = array_shift( $articles );
+	
+		$this->assertAttributeNotEmpty( 'author', $article );
+		$this->assertAttributeInstanceOf( '\Model\Author', 'author', $article );
+	
+	}	
 	
 	protected function _getSimpleData()
 	{
@@ -371,6 +381,13 @@ class MapperTest extends BaseTest
 	{
 		self::$_dbConnection->simple->batchInsert( $this->_getListData() );
 		return $this->_getListData();		
+	}
+	
+	protected function _saveArticleWithAuthor()
+	{
+		$author = array( 'name' => 'test' );
+		self::$_dbConnection->authors->save( $author );
+		self::$_dbConnection->articles->insert( array ( 'title' => 'test', 'author' => $author['_id'] ) );
 	}
 	
 }
